@@ -1,0 +1,52 @@
+{
+    "manifestVersion": 1,
+    "id": "ssl-custom-domain",
+    "publisher": "",
+    "version": "1.0.0",
+    "name": "Install SSL and Custom Domains",
+    "description": "Adds a .PFX secure file and custom domains to an App Service in Azure",
+    "publisher": "wearetriple",
+    "public": false,
+    "categories": ["Build and release"],
+    "targets": [
+        {
+            "id": "Microsoft.VisualStudio.Services"
+        }
+    ],
+    "icons": {
+        "default": "assets/logo.png"
+    },
+    "tags": [
+        "SSL",
+        "HTTPS",
+        "Certificate",
+        "Certificates",
+        "PFX",
+        "Custom domain",
+        "Custom domains",
+        "App Service",
+        "App Services",
+        "Azure"
+    ],
+    "repository": {
+        "type": "git",
+        "uri": "https://github.com/wearetriple/ados-extension-ssl-custom-domain"
+    },
+    "contributions": [
+        {
+            "id": "sslcustomdomain",
+            "type": "ms.vss-distributed-task.task",
+            "targets": [
+                "ms.vss-distributed-task.tasks"
+            ],
+            "properties": {
+                "name": "sslcustomdomain"
+            }
+        }
+    ],
+    "files": [
+        {
+            "path": "sslcustomdomain"
+        }
+    ]
+}
