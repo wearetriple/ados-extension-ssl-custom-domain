@@ -9,15 +9,16 @@
     "version": {
         "major": 1,
         "minor": 0,
-        "patch": 0,
+        "patch": 1,
         "isTest": false
     },
     "demands": [
         "azureps"
     ],
     "friendlyName": "Install SSL and Custom Domain",
-    "description": "--insert description--",
-    "helpMarkDown": "[More information..]()",
+    "description": "Installs an SSL certificate (.pfx) and custom domains to the specified app service in Azure",
+    "helpMarkDown": "[More information..](https://github.com/wearetriple/ados-extension-ssl-custom-domain)",
+    "iconUrl": "https://raw.githubusercontent.com/wearetriple/ados-extension-ssl-custom-domain/master/assets/logo.png",
     "category": "Deploy",
     "author": "Triple",
     "groups": [],

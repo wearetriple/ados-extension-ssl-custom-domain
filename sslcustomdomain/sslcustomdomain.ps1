@@ -6,30 +6,28 @@ param (
     [string] $CertificateFileName
 )
 
-Write-Host $ResourceGroupName
-Write-Host $AppServiceName
-Write-Host $CustomDomains
-Write-Host $CertificatePassword
-Write-Host $CertificateFileName
-
-# $ResourceGroupName = Get-VstsInput -Name "ResourceGroupName"
-$ResourceWebsiteName = $AppServiceName
-# $CustomDomains = (Get-VstsInput -Name "CustomDomains").Split(",")
-# $CertificatePassword = Get-VstsInput -Name "CertificatePassword"
 $CertificateFilePath = $env:AGENT_TEMPDIRECTORY + "/" +  $CertificateFileName
 
-Write-Host $CertificateFilePath
+$WebAppResource = Get-AzureRmResource -Name $AppServiceName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -ApiVersion 2014-11-01
 
-$WebAppResource = Get-AzureRmResource -Name $ResourceWebsiteName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -ApiVersion 2014-11-01
+if ([System.IO.File]::Exits($CertificateFilePath)) {
+    Write-Host ("Certificate found at {0}" -f $CertificateFilePath)
+}
+else {
+    Write-Error ("Certificate does not exist at path {0}" -f $CertificateFilePath)
+    throw
+}
 
 $certificateObject = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2
 $certificateObject.Import($CertificateFilePath, $CertificatePassword, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::DefaultKeySet)
-$CertificateThumbprint  =$certificateObject.Thumbprint
+$CertificateThumbprint = $certificateObject.Thumbprint
+
+Write-Host ("Checking if certificate with thumbprint {0} exists on {1} .." -f $CertificateThumbprint, $AppServiceName)
 
 $UploadedCertificateResource = Get-AzureRmResource -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/certificates -ApiVersion 2018-09-01 | Where-Object { $_.Properties.Thumbprint -eq $CertificateThumbprint } 
 if ($UploadedCertificateResource -eq $null)
 {   
-    Write-Host ("Certificate does not exist. Uploading with thumbprint {0} ..." -f $CertificateThumbprint)
+    Write-Host ("Certificate with thumbprint {0} does not exist. Uploading .." -f $CertificateThumbprint)
 
     $pfxContents = [Convert]::ToBase64String([System.IO.File]::ReadAllBytes($CertificateFilePath))
 
@@ -43,15 +41,15 @@ foreach ($CustomDomain in $CustomDomains)
     if ($HostnameBinding -eq $null) 
     {
         $HostnameBindingProperties = @{
-            SiteName = $ResourceWebsiteName;
+            SiteName = $AppServiceName;
             HostNameType = "Verified";
         }
         
-        Write-Host ("Hostname binding for {0} does not exist. Creating ..." -f $CustomDomain)
+        Write-Host ("Hostname binding for {0} does not exist. Creating .." -f $CustomDomain)
          
-        New-AzureRmResource -ResourceName "$ResourceWebsiteName/$CustomDomain" -Location $WebAppResource.Location -PropertyObject $HostnameBindingProperties -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites/hostNameBindings -ApiVersion 2015-08-01 -Force | Out-Null
+        New-AzureRmResource -ResourceName "$AppServiceName/$CustomDomain" -Location $WebAppResource.Location -PropertyObject $HostnameBindingProperties -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites/hostNameBindings -ApiVersion 2015-08-01 -Force | Out-Null
         
-        $WebAppResource = Get-AzureRmResource -Name $ResourceWebsiteName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -ApiVersion 2014-11-01
+        $WebAppResource = Get-AzureRmResource -Name $AppServiceName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -ApiVersion 2014-11-01
     }
     
     $WebProperties = $WebAppResource.Properties
@@ -69,15 +67,16 @@ foreach ($CustomDomain in $CustomDomains)
 
         $HostnameSslStates.Add($SslState)
         $WebProperties.HostNameSslStates = $HostnameSslStates
+        
         try
         {
-            Write-Host ("Hostname SSL binding for {0} does not exist. Creating binding with thumbprint {1} ..." -f $CustomDomain, $CertificateThumbprint)
+            Write-Host ("Hostname SSL binding for {0} does not exist. Creating binding with thumbprint {1} .." -f $CustomDomain, $CertificateThumbprint)
             
-            Set-AzureRmResource -Name $ResourceWebsiteName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -PropertyObject $WebProperties -ApiVersion 2014-11-01 -Force | Out-Null
+            Set-AzureRmResource -Name $AppServiceName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -PropertyObject $WebProperties -ApiVersion 2014-11-01 -Force | Out-Null
         }
         catch 
         {
-            Write-Host ("Cannot set hostname SSL binding for {0}." -f $CustomDomain)
+            Write-Error ("Cannot set hostname SSL binding for {0}." -f $CustomDomain)
             throw
         }
     }
@@ -93,7 +92,7 @@ foreach ($CustomDomain in $CustomDomains)
     
             $WebProperties.HostNameSslStates[$HostnameSslStates.IndexOf($SslState)] = $SslState
         
-            Set-AzureRmResource -Name $ResourceWebsiteName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -PropertyObject $WebProperties -ApiVersion 2014-11-01 -Force | Out-Null
+            Set-AzureRmResource -Name $AppServiceName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -PropertyObject $WebProperties -ApiVersion 2014-11-01 -Force | Out-Null
         }
     }
 }

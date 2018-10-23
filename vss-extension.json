@@ -1,11 +1,11 @@
 {
     "manifestVersion": 1,
     "id": "ssl-custom-domain",
-    "version": "1.5.7",
+    "version": "2.0.0",
     "name": "Install SSL and Custom Domains",
     "description": "Adds a .PFX secure file and custom domains to an App Service in Azure",
     "publisher": "wearetriple",
-    "public": false,
+    "public": true,
     "categories": ["Build and release"],
     "targets": [
         {
