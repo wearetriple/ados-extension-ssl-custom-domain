@@ -1,8 +1,7 @@
 {
     "manifestVersion": 1,
     "id": "ssl-custom-domain",
-    "publisher": "",
-    "version": "1.0.0",
+    "version": "1.5.7",
     "name": "Install SSL and Custom Domains",
     "description": "Adds a .PFX secure file and custom domains to an App Service in Azure",
     "publisher": "wearetriple",
@@ -28,6 +27,14 @@
         "App Services",
         "Azure"
     ],
+    "content": {
+        "license": {
+          "path": "license.md"
+        },
+        "details": {
+          "path": "README.md"
+        }
+    },
     "repository": {
         "type": "git",
         "uri": "https://github.com/wearetriple/ados-extension-ssl-custom-domain"
