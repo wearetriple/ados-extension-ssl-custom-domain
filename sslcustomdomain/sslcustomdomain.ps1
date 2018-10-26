@@ -10,7 +10,7 @@ $CertificateFilePath = $env:AGENT_TEMPDIRECTORY + "/" +  $CertificateFileName
 
 $WebAppResource = Get-AzureRmResource -Name $AppServiceName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -ApiVersion 2014-11-01
 
-if ([System.IO.File]::Exits($CertificateFilePath)) {
+if ([System.IO.File]::Exists($CertificateFilePath)) {
     Write-Host ("Certificate found at {0}" -f $CertificateFilePath)
 }
 else {
