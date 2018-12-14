@@ -8,6 +8,7 @@
 5. Configure the step with the following settings:
     - AzureRM subscription: The service connection to your Azure subscription.
     - AppServiceName: The name of the App Service to which the certificate and custom domains must be installed.
+    - AppServiceSlotName: The name of the deployment slot inside the App Service. Keep empty if there is only the default deployment slot.
     - CertificateFileName: The name of the secure file containing the certificate.
     - CertificatePassword: The password of the certificate.
     - CustomDomains: The list of custom domains to be attached, use comma's to separate multiple domains.

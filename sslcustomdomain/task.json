@@ -8,8 +8,8 @@
     "name": "Install SSL and Custom Domain",
     "version": {
         "major": 1,
-        "minor": 0,
-        "patch": 2,
+        "minor": 1,
+        "patch": 0,
         "isTest": false
     },
     "demands": [
@@ -41,6 +41,18 @@
             "required": true,
             "type": "string",
             "helpMarkDown": "Name of the app service to which the SSL + Custom Domains must be applied",
+            "groupName": ""
+        },
+        {
+            "aliases": [],
+            "options": {},
+            "properties": {},
+            "name": "AppServiceSlotName",
+            "label": "AppServiceSlotName",
+            "defaultValue": "",
+            "required": false,
+            "type": "string",
+            "helpMarkDown": "Name of the deployment slot inside the app service to which the SSL + Custom Domains must be applied. Keep empty if there is only the default deployment slot.",
             "groupName": ""
         },
         {

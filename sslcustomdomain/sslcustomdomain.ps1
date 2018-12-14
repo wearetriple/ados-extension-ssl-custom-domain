@@ -1,10 +1,18 @@
 param (
     [string] $ResourceGroupName,
     [string] $AppServiceName,
+    [string] $AppServiceSlotName,
     [string] $CustomDomains,
     [string] $CertificatePassword,
     [string] $CertificateFileName
 )
+
+if ($AppServiceSlotName) {
+    $AppServiceDisplayName = "$AppServiceName/$AppServiceSlotName"
+}
+else {
+    $AppServiceDisplayName = $AppServiceName
+}
 
 $CertificateFilePath = $env:AGENT_TEMPDIRECTORY + "/" +  $CertificateFileName
 
@@ -24,7 +32,7 @@ $certificateObject = New-Object System.Security.Cryptography.X509Certificates.X5
 $certificateObject.Import($CertificateFilePath, $CertificatePassword, [System.Security.Cryptography.X509Certificates.X509KeyStorageFlags]::DefaultKeySet)
 $CertificateThumbprint = $certificateObject.Thumbprint
 
-Write-Host ("Checking if certificate with thumbprint {0} exists on {1} .." -f $CertificateThumbprint, $AppServiceName)
+Write-Host ("Checking if certificate with thumbprint {0} exists on {1} .." -f $CertificateThumbprint, $AppServiceDisplayName)
 
 $Certificates = Get-AzureRmResource -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/certificates -ApiVersion 2018-09-01
 
@@ -45,7 +53,7 @@ else
 
 foreach ($CustomDomain in $CustomDomains.Split(",")) 
 {
-    Write-Host ("Checking if hostname {0} exists on {1} .." -f $CustomDomain, $AppServiceName)
+    Write-Host ("Checking if hostname {0} exists on {1} .." -f $CustomDomain, $AppServiceDisplayName)
 
     $HostnameBinding = $WebAppResource.Properties.HostNames | Where-Object { $_ -eq $CustomDomain }
     if ($HostnameBinding -eq $null) 
@@ -57,9 +65,16 @@ foreach ($CustomDomain in $CustomDomains.Split(","))
         
         Write-Host ("Hostname {0} does not exist. Creating .." -f $CustomDomain)
          
-        New-AzureRmResource -ResourceName "$AppServiceName/$CustomDomain" -Location $WebAppResource.Location -PropertyObject $HostnameBindingProperties -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites/hostNameBindings -ApiVersion 2015-08-01 -Force | Out-Null
+        if ($AppServiceSlotName) {
+            New-AzureRmResource -ResourceName "$AppServiceName/$AppServiceSlotName/$CustomDomain" -Location $WebAppResource.Location -PropertyObject $HostnameBindingProperties -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites/hostNameBindings -ApiVersion 2015-08-01 -Force | Out-Null
         
-        $WebAppResource = Get-AzureRmResource -Name $AppServiceName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -ApiVersion 2014-11-01
+            $WebAppResource = Get-AzureRmResource -Name $AppServiceName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites/slots -ApiVersion 2014-11-01
+        }
+        else {
+            New-AzureRmResource -ResourceName "$AppServiceName/$CustomDomain" -Location $WebAppResource.Location -PropertyObject $HostnameBindingProperties -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites/hostNameBindings -ApiVersion 2015-08-01 -Force | Out-Null
+        
+            $WebAppResource = Get-AzureRmResource -Name $AppServiceName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -ApiVersion 2014-11-01
+        }
     }
     else 
     {
@@ -69,7 +84,7 @@ foreach ($CustomDomain in $CustomDomains.Split(","))
     $WebProperties = $WebAppResource.Properties
     [System.Collections.ArrayList]$HostnameSslStates = $WebProperties.HostNameSslStates
     
-    Write-Host ("Checking if hostname SSL binding for {0} exists on {1} .." -f $CustomDomain, $AppServiceName)
+    Write-Host ("Checking if hostname SSL binding for {0} exists on {1} .." -f $CustomDomain, $AppServiceDisplayName)
 
     $SslState = $WebProperties.HostNameSslStates | Where-Object { $_.name -eq $CustomDomain }
     if ($SslState -eq $null -or $SslState.Thumbprint -eq $null) 
@@ -88,7 +103,12 @@ foreach ($CustomDomain in $CustomDomains.Split(","))
         {
             Write-Host ("Hostname SSL binding for {0} does not exist. Creating binding with thumbprint {1} .." -f $CustomDomain, $CertificateThumbprint)
             
-            Set-AzureRmResource -Name $AppServiceName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -PropertyObject $WebProperties -ApiVersion 2014-11-01 -Force | Out-Null
+            if ($AppServiceSlotName) {
+                Set-AzureRmResource -Name "$AppServiceName/$AppServiceSlotName" -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites/slots -PropertyObject $WebProperties -ApiVersion 2014-11-01 -Force | Out-Null
+            }
+            else {
+                Set-AzureRmResource -Name $AppServiceName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -PropertyObject $WebProperties -ApiVersion 2014-11-01 -Force | Out-Null
+            }
         }
         catch 
         {
@@ -106,7 +126,12 @@ foreach ($CustomDomain in $CustomDomains.Split(","))
 
         $WebProperties.HostNameSslStates[$HostnameSslStates.IndexOf($SslState)] = $SslState
     
-        Set-AzureRmResource -Name $AppServiceName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -PropertyObject $WebProperties -ApiVersion 2014-11-01 -Force | Out-Null
+        if ($AppServiceSlotName) {
+            Set-AzureRmResource -Name "$AppServiceName/$AppServiceSlotName" -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites/slots -PropertyObject $WebProperties -ApiVersion 2014-11-01 -Force | Out-Null
+        }
+        else {
+            Set-AzureRmResource -Name $AppServiceName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -PropertyObject $WebProperties -ApiVersion 2014-11-01 -Force | Out-Null
+        }
     }
     else 
     {
