@@ -1,11 +1,22 @@
-param (
-    [string] $ResourceGroupName,
-    [string] $AppServiceName,
-    [string] $AppServiceSlotName,
-    [string] $CustomDomains,
-    [string] $CertificatePassword,
-    [string] $CertificateFileName
-)
+Import-Module .\ps_modules\VstsTaskSdk\VstsTaskSdk.psm1
+
+$ResourceGroupName = Get-VstsInput -Name "ResourceGroupName"
+$AppServiceName = Get-VstsInput -Name "AppServiceName"
+$AppServiceSlotName = Get-VstsInput -Name "AppServiceSlotName"
+$CustomDomains = Get-VstsInput -Name "CustomDomains"
+$CertificatePassword = Get-VstsInput -Name "CertificatePassword"
+$CertificateFileName = Get-VstsInput -Name "CertificateFileName"
+
+Write-Host "ResourceGroupName"
+Write-Host $ResourceGroupName
+Write-Host "AppServiceName"
+Write-Host $AppServiceName
+Write-Host "AppServiceSlotName"
+Write-Host $AppServiceSlotName
+Write-Host "CustomDomains"
+Write-Host $CustomDomains
+Write-Host "CertificateFileName"
+Write-Host $CertificateFileName
 
 if ($AppServiceSlotName) {
     $AppServiceDisplayName = "$AppServiceName/$AppServiceSlotName"
@@ -14,7 +25,41 @@ else {
     $AppServiceDisplayName = $AppServiceName
 }
 
+Write-Host "AppServiceDisplayName"
+Write-Host $AppServiceDisplayName
+
 $CertificateFilePath = $env:AGENT_TEMPDIRECTORY + "/" +  $CertificateFileName
+
+Write-Host "CertificateFilePath"
+Write-Host $CertificateFilePath
+
+$serviceNameInput = Get-VstsInput -Name ConnectedServiceNameSelector -Default 'ConnectedServiceName'
+$serviceName = Get-VstsInput -Name $serviceNameInput -Default (Get-VstsInput -Name DeploymentEnvironmentName)
+
+Write-Host "serviceName"
+Write-Host $serviceName
+
+try {
+    $endpoint = Get-VstsEndpoint -Name $serviceName -Require
+    if (!$endpoint) {
+        throw "Endpoint not found..."
+    }
+    $subscriptionId = $endpoint.Data.SubscriptionId
+    $tenantId = $endpoint.Auth.Parameters.TenantId
+    $servicePrincipalId = $endpoint.Auth.Parameters.servicePrincipalId
+    $servicePrincipalKey = $endpoint.Auth.Parameters.servicePrincipalKey
+
+    $spnKey = ConvertTo-SecureString $servicePrincipalKey -AsPlainText -Force
+    $credentials = New-Object System.Management.Automation.PSCredential($servicePrincipalId,$spnKey)
+
+    Add-AzureRmAccount -ServicePrincipal -TenantId $tenantId -Credential $credentials
+    Select-AzureRmSubscription -SubscriptionId $subscriptionId -Tenant $tenantId
+
+    $ctx = Get-AzureRmContext
+    Write-Host "Connected to subscription '$($ctx.Subscription)' and tenant '$($ctx.Tenant)'..."
+} catch {
+    Write-Host "Authentication failed: $($_.Exception.Message)..." 
+}
 
 $WebAppResource = Get-AzureRmResource -Name $AppServiceName -ResourceGroupName $ResourceGroupName -ResourceType Microsoft.Web/sites -ApiVersion 2014-11-01
 

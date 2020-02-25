@@ -8,7 +8,7 @@
     "name": "Install SSL and Custom Domain",
     "version": {
         "major": 1,
-        "minor": 1,
+        "minor": 2,
         "patch": 0,
         "isTest": false
     },
@@ -106,7 +106,7 @@
     ],
     "instanceNameFormat": "Install SSL and Custom Domain for $(AppServiceName)",
     "execution": {
-        "AzurePowerShell": {
+        "PowerShell3": {
             "target": "sslcustomdomain.ps1"
         }
     }
