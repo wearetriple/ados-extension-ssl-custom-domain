@@ -1,0 +1,12 @@
+name: Publish to marketplace
+on:
+  workflow_dispatch:
+    secrets:
+      access-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }} 
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - run: npm install -g tfx-cli
+    - run: tfx extension publish -t $PERSONAL_ACCESS_TOKEN 
