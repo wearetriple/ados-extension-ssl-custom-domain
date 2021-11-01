@@ -28,7 +28,14 @@ else {
 Write-Host "AppServiceDisplayName"
 Write-Host $AppServiceDisplayName
 
-$CertificateFilePath = $env:AGENT_TEMPDIRECTORY + "/" +  $CertificateFileName
+if ($CertificateFileName -Like "$env:AGENT_TEMPDIRECTORY/*")
+{
+    $CertificateFilePath = $CertificateFileName
+}
+else 
+{
+    $CertificateFilePath = $env:AGENT_TEMPDIRECTORY + "/" +  $CertificateFileName    
+}
 
 Write-Host "CertificateFilePath"
 Write-Host $CertificateFilePath
