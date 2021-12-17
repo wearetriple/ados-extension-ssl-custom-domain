@@ -28,7 +28,7 @@ else {
 Write-Host "AppServiceDisplayName"
 Write-Host $AppServiceDisplayName
 
-if ($CertificateFileName -Like "$env:AGENT_TEMPDIRECTORY/*")
+if ($CertificateFileName -Like "$env:AGENT_TEMPDIRECTORY*")
 {
     $CertificateFilePath = $CertificateFileName
 }
